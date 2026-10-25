@@ -1,50 +1,19 @@
 # FitFindr
 
-> ### 👋 Start here
->
-> **New to this repo? Read [RUNNING.md](RUNNING.md) first** — setup, every
-> command, and what to do when something breaks.
->
-> Once `python test.py` passes:
->
-> ```bash
-> python app.py listings --full -n 6      # read the data (Milestone 1)
-> python app.py fields                    # what you can filter on
-> python app.py ask 'vintage graphic tee under $30'
-> ```
->
-> All three tools are stubs, so that last command will do nothing useful yet.
-> That's the starting position.
->
-> **The rest of this file is your submission.** Fill it in as you go.
+Swikriti Neupane
 
----
+See [RUNNING.md](RUNNING.md) for environment setup and commands.
 
-<!-- ─────────────────────────────────────────────────────────────────────────
-     HOW TO USE THIS FILE
-
-     This is your submission. Fill each section in as you finish the milestone
-     it belongs to — don't leave it all to the end.
-
-     Unit 3 asks for the first five sections. Unit 4 adds the five below them.
-     Leave the unit 4 sections alone until then; they're here so you know
-     what's coming.
-
-     Everything is pasted as TEXT. No screenshots, no images, no video links.
-     A typed block of output gets full credit; a picture of the same output
-     gets none.
-     ───────────────────────────────────────────────────────────────────────── -->
-
-<!-- ═══════════════════════ UNIT 3 — THE BUILD ═══════════════════════ -->
+> 
 
 ## What This Does
 
-<!-- Three or four sentences: what a user asks for, and what they get back. -->
-
-
-
----
-
+FitFindr helps users explore a local dataset of 40 mock secondhand
+clothing listings. A user enters clothing keywords and optionally a
+size and maximum price, and the agent selects the highest-ranked
+matching listing. It uses Gemini to suggest outfits using the supplied
+wardrobe and create a short caption with the item's price and platform.
+If nothing matches, it stops and suggests changes to the search.
 ## Tool Inventory
 
 
@@ -105,6 +74,93 @@ the session.
 to enforce the starter's maximum iteration limit.
 
 ## Sample Run
+### One full query
+
+Command:
+
+```powershell
+python app.py ask 'vintage graphic tee under $30, size M'
+```
+
+Actual output:
+
+```text
+Found:    Y2K Baby Tee — Butterfly Print — $18.0 on depop
+
+Outfit:   Outfit 1:
+Pair the Y2K Baby Tee — Butterfly Print with the Baggy straight-leg jeans, dark wash, and finish with the Chunky white sneakersfor a classic Y2K streetwear look.
+
+Outfit 2:
+Combine the Y2K Baby Tee — Butterfly Print with the Wide-leg khaki trousers, layered under the Vintage black denim jacket, and complete the outfit with the Chunky white sneakers.
+
+Fit card: Channel classic Y2K streetwear by styling this graphic tee with baggy straight-leg jeans and chunky white sneakers.Grab the Y2K Baby Tee — Butterfly Print on Depop for $18.00 to complete your vintage rotation.
+
+2 model calls this session, 1104 prompt + 135 output tokens
+```
+
+### Empty-search branch
+
+Command:
+
+```powershell
+python app.py ask 'designer ballgown size XXS under $5'
+```
+
+Actual output:
+
+```text
+No matching listings. Try broader description keywords, a different size, or a higher maximum price.
+
+0 model calls this session
+```
+
+### Individual tool tests
+
+#### search_listings
+
+Command:
+
+```powershell
+python -c "from tools import search_listings; from pprint import pprint; pprint(search_listings('graphic tee', max_price=30))"
+```
+
+The actual output contained six listing dictionaries, with IDs
+lst_002, lst_006, lst_017, lst_033, lst_011, and lst_015.
+Their prices were 18, 24, 15, 19, 27, and 26 respectively.
+The full output should be pasted below.
+
+#### suggest_outfit
+
+Command:
+
+```powershell
+python -c "from tools import suggest_outfit; from utils.data_loader import get_example_wardrobe, load_listings; print(suggest_outfit(load_listings()[0], get_example_wardrobe()))"
+```
+
+Actual output:
+
+```text
+Outfit 1:
+Pair the Vintage Levi's 501 Jeans with the White ribbed tank top, layered under the Oversized grey crewneck sweatshirt. Finish the look with the Chunky white sneakers and the Black crossbody bag.
+
+Outfit 2:
+Style the Vintage Levi's 501 Jeans with the White ribbed tank top and the Vintage black denim jacket on top. Accessorize with the Brown leather belt, and complete the outfit with the Black combat boots.
+```
+
+#### create_fit_card
+
+Command:
+
+```powershell
+python -c "from tools import create_fit_card; from utils.data_loader import load_listings; item = load_listings()[0]; print('Listing:', item['title'], item['price'], item['platform']); print(create_fit_card('Pair with a white t-shirt and white sneakers for a casual look.', item))"
+```
+
+Actual output:
+
+```text
+Listing: Vintage Levi's 501 Jeans — Medium Wash 38.0 depop
+Channel casual style by pairing these classic blue Levi's 501 Jeans with a simple white t-shirt and fresh sneakers. These vintage denim bottoms feature a great medium wash and are available on depop for $38.00. Grab this timeless streetwear staple for your everyday wardrobe rotation today!
+```
 ### Session-state verification
 
 I used temporary wrappers around the real tools to inspect their inputs.
@@ -155,58 +211,28 @@ added urgency that was not supported by the listing. Variation alone
 does not guarantee that every statement is grounded.
 
 
-
-**One full query**
-
-```
-$ python app.py ask '...'
-
-```
-
-**The three tools, tested one at a time**
-
-```
-$ python -c "from tools import search_listings; print(search_listings('graphic tee', max_price=30))"
-
-```
-
-```
-$ python -c "from tools import suggest_outfit; ..."
-
-```
-
-```
-$ python -c "from tools import create_fit_card; ..."
-
-```
-
----
-
 ## How I Used AI
 
-<!-- Two specific moments. What you asked, what came back, what you changed.
+**Moment 1 — Implementing and checking the tools**
 
-     "I used Claude to help me code" is not enough.
+I asked Claude for implementation help based on the starter functions
+and my Tool Inventory. It supplied keyword-search code and prompts for
+the model-backed tools. My first tests returned empty results because
+Python was still loading saved placeholder functions. I used the
+suggested inspection commands, replaced the placeholders, saved the
+file, and reran the tests. This showed me why checking the code actually
+loaded by Python matters.
 
-     "I gave Claude my search_listings spec. It returned None on no match
-     instead of an empty list, so I changed it" is the level we want. -->
+**Moment 2 — Connecting and checking session state**
 
-**Moment 1**
+I asked Claude to help connect the tools using the session dictionary.
+It supplied a staged loop with an empty-search branch and an iteration
+guard. I added it to agent.py and tested both a matching query and an
+impossible query. I then ran its wrapper-based inspection to check the
+actual tool inputs: all three listing IDs were lst_002, and the saved
+outfit text matched the input passed to create_fit_card.
 
-- *What I asked for:*
-- *What came back:*
-- *What I changed:*
 
-**Moment 2**
-
-- *What I asked for:*
-- *What came back:*
-- *What I changed:*
-
-<!-- ═══════════════════════ UNIT 4 — THE TEST ═══════════════════════
-
-     Don't fill these in during unit 3.
-     ═══════════════════════════════════════════════════════════════════ -->
 
 ---
 
