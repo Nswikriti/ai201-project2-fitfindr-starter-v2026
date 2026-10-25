@@ -11,3 +11,4 @@
 - Some listings have a null brand, meaning no brand is provided.
 - I ran: python app.py ask 'vintage graphic tee under $30'
 - The starter reported that the planning loop is not built yet,  with 0 model calls, which is expected at this stage.
+- An empty wardrobe is represented as {"items": []}. When no items are entered, suggest_outfit should provide general styling advice instead of failing.
