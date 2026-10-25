@@ -320,11 +320,15 @@ that produced it:
 
 ```
 
-**On the MCP move:** <!-- what changed in your code, and whether anything
-behaved differently afterwards. If the rewire didn't work, say exactly where it
-broke — the error text and the last thing that worked. That earns the point in
-full. -->
+**On the MCP move:** I registered search_listings in mcp_server.py
+with typed description, size, and max_price inputs. In
+agent.py::run_agent, I replaced the direct search call with
+mcp_client.call_tool("search_listings", session["parsed"]).
 
+The server listed the expected tool and inputs. The matching query
+still selected lst_002, the $18 Y2K Baby Tee, and completed the outfit
+and fit card using cached model responses. The impossible query still
+returned helpful advice and made zero model calls.
 
 
 ---

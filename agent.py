@@ -17,6 +17,9 @@ import config
 import trace
 from tools import search_listings, suggest_outfit, create_fit_card
 from generate import ModelUnavailable
+from mcp_client import call_tool
+
+
 
 
 # ── session state ─────────────────────────────────────────────────────────────
@@ -111,8 +114,9 @@ def run_agent(query: str, wardrobe: dict) -> dict:
             stage = "search"
 
         elif stage == "search":
-            session["search_results"] = search_listings(
-                **session["parsed"]
+            session["search_results"] = call_tool(
+                "search_listings",
+                session["parsed"],
             )
 
             if not session["search_results"]:
