@@ -298,15 +298,32 @@ that produced it:
 
 ## Loop Trace
 
-<!-- One full run, printed step by step, with the MCP call visible in it.
+<### Model-unavailable check
 
-     `python app.py ask '...' --trace` once you've added the trace.step()
-     calls in Milestone 2.
+I disabled caching and set an invalid API key only inside a temporary
+Python process. The real key in .env was unchanged.
 
-     Worth pasting BOTH the happy path and the empty-search path. The empty
-     one should be visibly shorter, because it stops. If your two traces are
-     the same length, your branch isn't working — and this is the fastest way
-     anyone will ever find that out. -->
+The trace reached search_listings through MCP, selected lst_002, and
+stopped when suggest_outfit could not reach the model successfully.
+
+Actual final output:
+
+```text
+ERROR: Outfit suggestions could not be generated. The model rejected your API key. Check GEMINI_API_KEY in your .env file, or create a fresh key at aistudio.google.com.
+FIT CARD: None
+1 model calls this session
+```
+
+The handler in agent.py::run_agent caught ModelUnavailable and returned
+the session with an actionable error rather than a stack trace.
+
+### Failure-mode summary
+
+| Condition | Observed behavior |
+|---|---|
+| Empty search | Stopped before outfit and fit-card generation, suggested changes to the search, and made zero model calls. |
+| Empty wardrobe | Returned general styling suggestions and completed the fit card. The check reused cached model responses. |
+| Model unavailable | Returned API-key troubleshooting advice and stopped with fit_card set to None. |
 
 **Happy path**
 

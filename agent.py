@@ -12,49 +12,34 @@ Build and test your three tools in `tools.py` first. Then come here.
 
     python agent.py          runs both example paths below
 """
-import re 
-import config
+
+import re
+
 import trace
-from tools import search_listings, suggest_outfit, create_fit_card
 from generate import ModelUnavailable
 from mcp_client import call_tool
+from tools import suggest_outfit, create_fit_card
 
-
-
-
-# ── session state ─────────────────────────────────────────────────────────────
 
 def new_session(query: str, wardrobe: dict) -> dict:
-    """
-    A fresh session for one user interaction.
-
-    The session is the single source of truth for a run. Every tool result goes
-    in here, and the next tool reads it back out.
-
-    You could pass values straight from one call to the next. It would work,
-    and you would not be able to test it — you can't print a variable you have
-    already overwritten. Going through the session is what makes the state
-    visible, and unit 4 has you write a criterion about exactly that.
-
-    Add fields if you need them.
-    """
+    """Create the saved state for one interaction."""
     return {
-        "query": query,              # what the user typed
-        "parsed": {},                # description / size / max_price you pulled out of it
-        "search_results": [],        # everything search_listings returned
-        "selected_item": None,       # the one you chose — goes into suggest_outfit
-        "wardrobe": wardrobe,        # the user's wardrobe
-        "outfit_suggestion": None,   # what suggest_outfit returned
-        "fit_card": None,            # what create_fit_card returned
-        "error": None,               # set when the run ended early
+        "query": query,
+        "parsed": {},
+        "search_results": [],
+        "selected_item": None,
+        "wardrobe": wardrobe,
+        "outfit_suggestion": None,
+        "fit_card": None,
+        "error": None,
     }
 
 
-# ── planning loop ─────────────────────────────────────────────────────────────
-
 def run_agent(query: str, wardrobe: dict) -> dict:
-    """Run the tools in stages, storing each result in the session."""
+    """Choose the next stage using results saved in the session."""
     session = new_session(query, wardrobe)
+    trace.start_trace()
+
     stage = "parse"
     iterations = 0
 
@@ -71,6 +56,7 @@ def run_agent(query: str, wardrobe: dict) -> dict:
                 description,
                 flags=re.IGNORECASE,
             )
+
             max_price = None
             if price_match:
                 max_price = float(price_match.group(1))
@@ -88,6 +74,7 @@ def run_agent(query: str, wardrobe: dict) -> dict:
                 description,
                 flags=re.IGNORECASE,
             )
+
             size = None
             if size_match:
                 size = size_match.group(1).strip()
@@ -111,6 +98,12 @@ def run_agent(query: str, wardrobe: dict) -> dict:
                 "size": size,
                 "max_price": max_price,
             }
+
+            trace.step(
+                "parse_query",
+                inputs=query,
+                returned=session["parsed"],
+            )
             stage = "search"
 
         elif stage == "search":
@@ -119,41 +112,107 @@ def run_agent(query: str, wardrobe: dict) -> dict:
                 session["parsed"],
             )
 
+            trace.step(
+                "search_listings (via MCP)",
+                inputs=session["parsed"],
+                returned=session["search_results"],
+            )
+
             if not session["search_results"]:
                 session["error"] = (
                     "No matching listings. Try broader description "
                     "keywords, a different size, or a higher maximum price."
                 )
+                trace.step(
+                    "empty_search",
+                    returned=session["error"],
+                    note="No matches: stopping before outfit and fit card.",
+                )
                 return session
 
             session["selected_item"] = session["search_results"][0]
+
+            trace.step(
+                "select_item",
+                returned=session["selected_item"],
+            )
             stage = "outfit"
 
         elif stage == "outfit":
-            session["outfit_suggestion"] = suggest_outfit(
-                session["selected_item"],
-                session["wardrobe"],
+            inputs = {
+                "new_item": session["selected_item"],
+                "wardrobe": session["wardrobe"],
+            }
+
+            try:
+                session["outfit_suggestion"] = suggest_outfit(**inputs)
+            except ModelUnavailable as exc:
+                session["error"] = (
+                    "Outfit suggestions could not be generated. "
+                    f"{exc}"
+                )
+                trace.step(
+                    "suggest_outfit",
+                    inputs=inputs,
+                    returned=session["error"],
+                    note="Model unavailable: stopping.",
+                )
+                return session
+
+            trace.step(
+                "suggest_outfit",
+                inputs=inputs,
+                returned=session["outfit_suggestion"],
+                note=(
+                    "Empty wardrobe: general styling advice."
+                    if not session["wardrobe"].get("items")
+                    else "Using supplied wardrobe."
+                ),
             )
             stage = "fit_card"
 
         elif stage == "fit_card":
-            session["fit_card"] = create_fit_card(
-                session["outfit_suggestion"],
-                session["selected_item"],
+            inputs = {
+                "outfit": session["outfit_suggestion"],
+                "new_item": session["selected_item"],
+            }
+
+            try:
+                session["fit_card"] = create_fit_card(**inputs)
+            except ModelUnavailable as exc:
+                session["error"] = (
+                    "The fit card could not be generated. "
+                    f"{exc}"
+                )
+                trace.step(
+                    "create_fit_card",
+                    inputs=inputs,
+                    returned=session["error"],
+                    note="Model unavailable: stopping.",
+                )
+                return session
+
+            trace.step(
+                "create_fit_card",
+                inputs=inputs,
+                returned=session["fit_card"],
             )
             return session
 
-# ── running it directly ───────────────────────────────────────────────────────
 
 def _show(session: dict) -> None:
+    """Print the final result or the reason the agent stopped."""
     if session["error"]:
         print(f"  stopped: {session['error']}")
-        print(f"  fit_card is {session['fit_card']!r} — it should still be None here")
+        print(f"  fit_card is {session['fit_card']!r}")
         return
 
     item = session["selected_item"] or {}
-    print(f"  found:    {item.get('title')} — ${item.get('price')} on {item.get('platform')}")
-    print(f"  outfit:   {session['outfit_suggestion']}")
+    print(
+        f"  found: {item.get('title')} "
+        f"— ${item.get('price')} on {item.get('platform')}"
+    )
+    print(f"  outfit: {session['outfit_suggestion']}")
     print(f"  fit card: {session['fit_card']}")
 
 
@@ -161,18 +220,17 @@ if __name__ == "__main__":
     from utils.data_loader import get_example_wardrobe
 
     print("=== A query the data can match ===")
-    _show(run_agent(
-        query="looking for a vintage graphic tee under $30",
-        wardrobe=get_example_wardrobe(),
-    ))
+    _show(
+        run_agent(
+            query="looking for a vintage graphic tee under $30",
+            wardrobe=get_example_wardrobe(),
+        )
+    )
 
-    print("\n=== A query it can't ===")
-    _show(run_agent(
-        query="designer ballgown size XXS under $5",
-        wardrobe=get_example_wardrobe(),
-    ))
-
-    print(
-        "\nThe second one should stop before the fit card. If both paths look "
-        "the same,\nthe branch isn't doing anything yet."
+    print("\n=== A query it cannot match ===")
+    _show(
+        run_agent(
+            query="designer ballgown size XXS under $5",
+            wardrobe=get_example_wardrobe(),
+        )
     )
