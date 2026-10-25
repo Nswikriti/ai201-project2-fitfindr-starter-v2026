@@ -72,8 +72,12 @@
 
 ## Planning Loop
 
-**Where it will live:** `agent.py::run_agent`.
-This is the planned behavior; implementation comes in Milestone 5.
+**Where it lives:** `agent.py::run_agent`.
+
+The implemented loop moves through parsing, search, outfit suggestion,
+and fit-card generation. Each iteration checks the maximum iteration
+limit. An empty search returns the session immediately with a helpful
+error message and no outfit or fit card.
 
 **How the query is parsed:** Use regular expressions to extract the
 description, optional size, and optional maximum price. Save these
@@ -101,6 +105,26 @@ the session.
 to enforce the starter's maximum iteration limit.
 
 ## Sample Run
+### Session-state verification
+
+I used temporary wrappers around the real tools to inspect their inputs.
+The selected listing ID matched the item passed to both tools, and
+create_fit_card received the outfit text saved in the session.
+
+```text
+{'create_fit_card_item_id': 'lst_002',
+ 'error': None,
+ 'parsed': {'description': 'vintage graphic tee',
+            'max_price': 30.0,
+            'size': 'M'},
+ 'same_item': True,
+ 'saved_outfit_passed_to_card': True,
+ 'selected_item_id': 'lst_002',
+ 'suggest_outfit_item_id': 'lst_002'}
+```
+
+This verifies one successful run. Repeated evaluation against the
+five acceptance criteria will take place in Unit 4.
 ### Fit-card variation check
 
 Function: tools.py::create_fit_card.
