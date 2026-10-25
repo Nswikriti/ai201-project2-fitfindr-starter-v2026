@@ -25,9 +25,11 @@ Given a query that matches at least one listing, the agent completes all three
 tool calls and returns a fit card — in at least 4 of 5 tries.
 
 **Why this target:**
-<!-- Why 4 of 5 and not 5 of 5? Something about your search, probably —
-     "my search is a plain keyword match and some phrasings will miss" is a
-     real answer. -->
+Finding an item alone does not complete the user's request. The agent
+must also suggest an outfit and produce a caption. I chose 4 of 5
+because this path depends on two model calls, which may occasionally
+fail or return unusable output. The target requires the full process
+to succeed in most attempts.
 
 ---
 
@@ -37,26 +39,29 @@ Given a query that matches no listings, the agent stops before calling
 `suggest_outfit` and returns a message naming what to change — 5 of 5 tries.
 
 **Why this target:**
-<!-- Why is 5 of 5 reasonable here when criterion 1 isn't? What's different
-     about this path? -->
+
+Without a matching item, the remaining tools have no valid listing
+to work with. Continuing could produce invented recommendations and
+unnecessary model calls. I chose 5 of 5 because checking an empty list
+is controlled by code. The message must suggest changing the keywords,
+size, or maximum price so the user knows what to try next.
 
 ---
 
 ## 3. Something about state
 
-<!-- YOU WRITE THIS ONE.
 
-     How would you know that the item your search found is the same item the
-     next tool received? Name something countable or observable.
-
-     This is the criterion people find hardest, because state failure doesn't
-     look like state failure — it looks like a tool problem. Something that
-     compares session["selected_item"] against what actually reached
-     suggest_outfit is the shape you're after. -->
-
+In 5 of 5 successful-search runs, the listing ID saved in
+session["selected_item"] matches the listing ID passed to both
+suggest_outfit and create_fit_card.
 
 
 **Why this target:**
+The outfit suggestion and fit card must refer to the item selected
+from the search results. Passing a different item would make the final
+result misleading, even if each tool worked individually. I chose
+5 of 5 because transferring the selected item between functions is
+controlled by code and should not depend on model response variation.
 
 
 
@@ -64,38 +69,39 @@ Given a query that matches no listings, the agent stops before calling
 
 ## 4. Something about the fit card
 
-<!-- YOU WRITE THIS ONE.
-
-     The fit card calls a model, so the same input can produce different words
-     each time. That's not a bug — it's the nature of the tool. So what would
-     make it acceptable?
-
-     Think about what you'd actually be unhappy to see. A caption that never
-     mentions the price? Two different items producing the same opening
-     sentence? A card longer than a caption anyone would post? Any of those can
-     be turned into a number. -->
-
+In at least 4 of 5 successful-search runs, the fit card contains
+two to four sentences, identifies the selected item, and includes
+its correct price and platform without inventing a brand.
+A missing fit card counts as a failure.
 
 
 **Why this target:**
 
+The caption should be short enough for a social post while giving
+accurate information about the find. Its price and platform must match
+the selected listing, and an unknown brand should remain unknown.
+I chose 4 of 5 because model-generated text can vary in format.
+A run passes only when it satisfies every requirement, so this target
+still demands consistent factual and formatting quality.
 
 
 ---
 
 ## 5. Your choice
 
-<!-- YOU WRITE THIS ONE TOO.
-
-     Pick something you actually care about getting right. Speed, the empty
-     wardrobe path, what happens when the model can't be reached, whether the
-     search respects a price ceiling — anything, as long as it names a number
-     or an observable outcome. -->
+For 5 different searches with a specified maximum price and at least
+one known matching listing within budget, search_listings returns
+at least one result, and every returned listing has a price less
+than or equal to that maximum. All 5 searches must pass.
 
 
 
 **Why this target:**
-
+The maximum price represents the user's budget. Returning a listing
+above it would violate the request, even if the item matched the
+description and size. I chose 5 of 5 because numeric price filtering
+is deterministic. Requiring a result when a known match exists also
+prevents an empty list from counting as a successful budget check.
 
 
 ---
