@@ -101,11 +101,36 @@ the session.
 to enforce the starter's maximum iteration limit.
 
 ## Sample Run
+### Fit-card variation check
 
-<!-- Two things go here.
+Function: tools.py::create_fit_card.
 
-     1. One FULL query and its output, pasted as text.
-     2. Your three per-tool terminal tests — the command and what it printed. -->
+I generated three captions using the same listing and outfit suggestion,
+with caching disabled for this command only.
+
+```powershell
+python -c "import config; config.CACHE_ENABLED = False; from tools import create_fit_card; from utils.data_loader import load_listings; item = load_listings()[0]; outfit = 'Pair with a white t-shirt and white sneakers for a casual look.'; print('Listing:', item['title'], item['price'], item['platform']); [print('\nRUN', i + 1, '\n', create_fit_card(outfit, item)) for i in range(3)]"
+```
+
+```text
+Listing: Vintage Levi's 501 Jeans — Medium Wash 38.0 depop
+
+RUN 1
+Complete your casual everyday look by pairing these Vintage Levi's 501 Jeans — Medium Wash with a crisp white t-shirt and white sneakers. Grab these classic denim bottoms on depop for $38.00before they're gone!
+
+RUN 2
+Level up your casual everyday rotation with these classic Levi's 501 Jeans featuring a timeless medium wash and effortless streetwear appeal. Pair them with a simple white t-shirt and fresh white sneakers for an effortless weekend aesthetic. Score this vintage piece for $38.00 on depop before it's gone!
+
+RUN 3
+Achieve an effortless, casual look by pairing these vintage Levi's 501 Jeans with a simple white t-shirt and white sneakers. Grab this classic denim staple for $38.00 on depop.
+```
+
+The captions differed and contained two, three, and two sentences.
+Each included the correct price and platform. However, the first two
+added urgency that was not supported by the listing. Variation alone
+does not guarantee that every statement is grounded.
+
+
 
 **One full query**
 
