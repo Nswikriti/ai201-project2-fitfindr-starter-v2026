@@ -238,22 +238,24 @@ outfit text matched the input passed to create_fit_card.
 
 ## Run Log — Before
 
-<!-- Five criteria, five tries each, in this exact format.
-
-     Five, because your criteria are written out of five. Mark each try PASS
-     or FAIL, count the passes, and read that count against your target — a
-     row targeting 4 of 5 with three PASS cells is MISSED (3/5).
-
-     `python run_eval.py --label before` runs everything and writes the table
-     into results/. Paste it here and fill in the verdicts. -->
-
 | Criterion | Target | Try 1 | Try 2 | Try 3 | Try 4 | Try 5 | Verdict |
 |---|---|---|---|---|---|---|---|
-| 1.  |  |  |  |  |  |  |  |
-| 2.  |  |  |  |  |  |  |  |
-| 3.  |  |  |  |  |  |  |  |
-| 4.  |  |  |  |  |  |  |  |
-| 5.  |  |  |  |  |  |  |  |
+| 1. Matching query completes all tools | At least 4 of 5 | PASS | PASS | PASS | PASS | PASS | MET (5/5) |
+| 2. Empty search stops before outfit | 5 of 5 | PASS | PASS | PASS | PASS | PASS | MET (5/5) |
+| 3. Selected item stays consistent | 5 of 5 | PASS | PASS | PASS | PASS | PASS | MET (5/5) |
+| 4. Fit card has accurate details and length | At least 4 of 5 | PASS | FAIL | PASS | PASS | PASS | MET (4/5) |
+| 5. Search respects the price ceiling | All 5 searches pass | PASS | PASS | PASS | PASS | PASS | MET |
+
+Evidence: results/run_2026-10-25_2004_before.md, produced by
+run_eval.py::main and run_eval.py::run_once.
+
+Caching was disabled. Each scenario ran five times. For criterion 5,
+each column represents a complete set of five different budget searches.
+All 25 search executions returned nonempty results within their ceilings.
+
+Criterion 4 was manually scored for sentence count, item identification,
+correct attribution of price and platform, and absence of invented brands.
+Decimal prices such as $18.0 were not counted as sentence boundaries.
 
 **Real output from one try**, pasted as text, naming the file and function
 that produced it:
@@ -266,29 +268,13 @@ that produced it:
 
 ## Verdicts and Diagnoses
 
-<!-- MET or MISSED per criterion against LAST UNIT's target, plus a sentence on
-     how you decided.
-
-     Then, for every miss: which of the four places it happened — a tool, the
-     loop's branch, the session, or the model's output — AND the mechanism.
-
-     Not a diagnosis:  "The fit card was bad."
-     A diagnosis:      "The fit card criterion missed on 2 of 5 items. Both had
-                        an empty brand field. My prompt puts the brand in the
-                        first sentence, so the card opened with a blank and read
-                        like a fragment. The tool worked; the prompt assumed a
-                        field that isn't always there."
-
-     Look for a pattern. Three misses on the same tool is one problem, not
-     three. -->
-
 | # | Criterion | Target | Verdict | How I decided |
 |---|---|---|---|---|
-| 1 |  |  |  |  |
-| 2 |  |  |  |  |
-| 3 |  |  |  |  |
-| 4 |  |  |  |  |
-| 5 |  |  |  |  |
+| 1 | Matching query completes all tools | At least 4 of 5 | MET (5/5) | All five runs searched through MCP, called both model tools, and returned a fit card. |
+| 2 | Empty search stops before outfit | 5 of 5 | MET (5/5) | All five runs returned actionable search advice. The recorded tool-call lists were empty for the two downstream tools. |
+| 3 | Selected item stays consistent | 5 of 5 | MET (5/5) | In every try, selected_item and the actual inputs to both tools contained listing ID lst_002. |
+| 4 | Fit card has accurate details and length | At least 4 of 5 | MET (4/5) | Try 2 attributed the price to a wardrobe accessory. The other four captions met the stated requirements. |
+| 5 | Search respects the price ceiling | All 5 searches pass | MET | Every budget search returned results, and every returned price was within its ceiling in all five repetitions. |
 
 **Diagnoses**
 
