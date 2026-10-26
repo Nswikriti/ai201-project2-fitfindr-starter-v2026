@@ -141,8 +141,7 @@ def create_fit_card(outfit: str, new_item: dict) -> str:
     """Create a short caption from an outfit and its selected listing."""
     if not outfit.strip():
         return "Cannot create a fit card without an outfit suggestion."
-
-        system = (
+    system = (
         "Write a natural social-media caption in two to four sentences. "
         "Return only the caption, without a heading or bullet points. "
         "Mention the selected item, its exact price, and its platform "
