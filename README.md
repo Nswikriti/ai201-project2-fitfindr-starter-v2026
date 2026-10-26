@@ -363,22 +363,29 @@ explicit while preserving the original acceptance criteria.
 
 **Did it help, and how do I know:**
 
-<!-- If it made things worse, say that. Honestly reported, that earns full
-     credit and is more interesting than one that worked. -->
+**Did it help, and how do I know:**
 
+The prompt change improved criterion 4 from 4/5 before to 5/5 after
+on its designated scenario. All five after-captions correctly attached
+the price and platform to the tee. The other criteria remained met.
 
-
----
+However, several captions repeated explanatory wording from the
+prompt, making them sound less natural. Five tries on one item do
+not prove that price attribution is reliable for every listing.
 
 ## What's Still Broken
 
-<!-- For each criterion still missed: what you'd do, and why you stopped where
-     you did. "I ran out of time" is fine if it's true. Pretending nothing is
-     left is not. -->
+No original criterion was missed overall after the change. However,
+some captions sound instructional rather than natural, and one caption
+in the separate state-check scenario still had less clear price
+attachment before clarifying that other pieces were styling suggestions.
+
+The successful-agent tests focus on one tee. Future testing should
+cover different items and missing brands. Keyword search also returns
+loosely related listings when only one word matches. I stopped after
+one measured prompt change to keep the comparison focused.
 
 
-
-<!-- ═════════════════════════════════════════════════════════════════════
 
      SUBMISSION CHECKLIST — unit 3
 
