@@ -1,66 +1,79 @@
-"""
-The runs your test needs. ← UNIT 4, MILESTONE 3
+"""Evaluation scenarios matching the five original acceptance criteria."""
 
-Each of your five criteria needs something run against it. A criterion about
-the empty-search branch needs an impossible query. One about the fit card needs
-the same item run more than once. Working that out is Milestone 3's first step,
-and this file is where you write it down.
+from utils.data_loader import load_listings
 
-`run_eval.py` runs everything here five times and writes the run log — five
-because your criteria are written out of five.
-
-Three scenarios are filled in to show the shape. Add or change whatever your
-own criteria need — these are a starting point, not a fixed set.
-"""
 
 SCENARIOS = [
     {
-        # A query the data can match. Criterion 1.
-        "name": "matching query completes",
-        "query": "vintage graphic tee under $30",
+        "name": "matching query completes all tools",
+        "query": "vintage graphic tee under $30, size M",
         "wardrobe": "example",
         "criterion": 1,
     },
     {
-        # A query nothing can match. Criterion 2 — the branch.
-        "name": "impossible query stops early",
+        "name": "impossible query stops before outfit",
         "query": "designer ballgown size XXS under $5",
         "wardrobe": "example",
         "criterion": 2,
     },
     {
-        # A user with nothing saved. One of unit 4's three failure modes.
-        "name": "empty wardrobe",
-        "query": "denim jacket under $50",
-        "wardrobe": "empty",
-        "criterion": None,
+        "name": "selected item reaches both tools unchanged",
+        "query": "vintage graphic tee under $30, size M",
+        "wardrobe": "example",
+        "criterion": 3,
     },
-    # TODO: add what your criteria 3, 4 and 5 need.
-    #
-    # Set "criterion" to the number in criteria.md that the scenario tests.
-    # "criterion": None means a diagnostic run — useful to have, but it isn't
-    # one of your five, and run_eval.py marks it as such in the table.
-    #
-    # For a state criterion, any normal query works — what you're checking is
-    # what ends up in the session, not what the user typed.
-    #
-    # For a fit-card criterion, you probably want the SAME query listed more
-    # than once, or several different items, depending on what your criterion
-    # actually says.
+    {
+        "name": "fit card has accurate details and sentence count",
+        "query": "vintage graphic tee under $30, size M",
+        "wardrobe": "example",
+        "criterion": 4,
+    },
 ]
+
+# Five different searches with known matches.
+# Each source listing must match its own title keywords, and its price
+# is exactly the inclusive budget boundary.
+for listing in load_listings()[:5]:
+    SCENARIOS.append({
+        "name": f"budget search for {listing['id']}",
+        "query": (
+            f"{listing['title']} "
+            f"under ${listing['price']:.2f}"
+        ),
+        "description": listing["title"],
+        "max_price": float(listing["price"]),
+        "known_match_id": listing["id"],
+        "test_kind": "search_only",
+        "wardrobe": "example",
+        "criterion": 5,
+    })
+
 
 WARDROBES = ("example", "empty")
 
 
 def validate() -> list[str]:
-    """Complain about anything malformed, before a long run rather than during."""
+    """Check the scenario definitions before evaluation."""
     problems = []
-    for i, scenario in enumerate(SCENARIOS, 1):
+
+    for index, scenario in enumerate(SCENARIOS, 1):
         if not scenario.get("query", "").strip():
-            problems.append(f"scenario {i} has no query")
+            problems.append(f"Scenario {index} has no query.")
+
         if scenario.get("wardrobe") not in WARDROBES:
-            problems.append(
-                f"scenario {i} has wardrobe {scenario.get('wardrobe')!r} — "
-                f"it should be one of {WARDROBES}"
-            )
+            problems.append(f"Scenario {index} has an invalid wardrobe.")
+
+        if scenario.get("criterion") not in range(1, 6):
+            problems.append(f"Scenario {index} has an invalid criterion.")
+
+        if scenario.get("test_kind") == "search_only":
+            if not scenario.get("description"):
+                problems.append(
+                    f"Scenario {index} has no search description."
+                )
+            if not isinstance(scenario.get("max_price"), (int, float)):
+                problems.append(
+                    f"Scenario {index} has no numeric price ceiling."
+                )
+
     return problems

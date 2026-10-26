@@ -38,30 +38,124 @@ import scenarios as scenario_module
 
 
 def run_once(scenario, use_trace=True):
-    """One scenario, one try. Returns everything worth recording."""
-    from agent import run_agent
-    from utils.data_loader import get_example_wardrobe, get_empty_wardrobe
-    import trace as trace_module
+    """Run one try and capture the session, trace, and actual tool inputs."""
+    import json
+    from copy import deepcopy
+    from unittest.mock import patch
 
-    wardrobe = (
-        get_empty_wardrobe() if scenario["wardrobe"] == "empty" else get_example_wardrobe()
+    import agent
+    import trace as trace_module
+    from mcp_client import call_tool
+    from utils.data_loader import (
+        get_example_wardrobe,
+        get_empty_wardrobe,
     )
 
-    if use_trace:
-        trace_module.start_trace()
+    wardrobe = (
+        get_empty_wardrobe()
+        if scenario["wardrobe"] == "empty"
+        else get_example_wardrobe()
+    )
 
-    record = {"error": None, "session": None, "trace": "", "crashed": None}
+    trace_module.start_trace()
+
+    record = {
+        "error": None,
+        "session": None,
+        "trace": "",
+        "crashed": None,
+    }
+    evidence = {"tool_calls": []}
+
+    def capture(name, function):
+        def wrapped(*args, **kwargs):
+            # Save inputs before the real tool runs.
+            entry = {
+                "name": name,
+                "args": deepcopy(args),
+                "kwargs": deepcopy(kwargs),
+            }
+            evidence["tool_calls"].append(entry)
+            result = function(*args, **kwargs)
+            entry["returned"] = deepcopy(result)
+            return result
+        return wrapped
+
     try:
-        record["session"] = run_agent(scenario["query"], wardrobe)
-    except Exception as exc:  # noqa: BLE001 — a crash is a result worth logging
+        if scenario.get("test_kind") == "search_only":
+            arguments = {
+                "description": scenario["description"],
+                "size": None,
+                "max_price": scenario["max_price"],
+            }
+            results = call_tool("search_listings", arguments)
+
+            trace_module.step(
+                "search_listings (via MCP)",
+                inputs=arguments,
+                returned=results,
+            )
+
+            record["session"] = agent.new_session(
+                scenario["query"], wardrobe
+            )
+            record["session"]["parsed"] = arguments
+            record["session"]["search_results"] = results
+            record["session"]["selected_item"] = (
+                results[0] if results else None
+            )
+
+            evidence["budget_check"] = {
+                "known_match_id": scenario["known_match_id"],
+                "max_price": scenario["max_price"],
+                "returned_items": [
+                    {"id": item["id"], "price": item["price"]}
+                    for item in results
+                ],
+                "nonempty": bool(results),
+                "all_within_budget": all(
+                    item["price"] <= scenario["max_price"]
+                    for item in results
+                ),
+            }
+
+        else:
+            # These wrappers record inputs but still execute the real tools.
+            with patch.object(
+                agent,
+                "suggest_outfit",
+                side_effect=capture(
+                    "suggest_outfit", agent.suggest_outfit
+                ),
+            ), patch.object(
+                agent,
+                "create_fit_card",
+                side_effect=capture(
+                    "create_fit_card", agent.create_fit_card
+                ),
+            ):
+                record["session"] = agent.run_agent(
+                    scenario["query"], wardrobe
+                )
+
+            selected = record["session"].get("selected_item")
+            evidence["selected_item_id"] = (
+                selected["id"] if selected else None
+            )
+
+    except Exception as exc:
         record["crashed"] = f"{type(exc).__name__}: {exc}"
         record["traceback"] = traceback.format_exc()
 
-    if use_trace:
-        record["trace"] = trace_module.get_trace()
+    # The existing report already prints this field. Append unshortened
+    # evidence so IDs, inputs, and prices are available for manual scoring.
+    record["trace"] = (
+        trace_module.get_trace()
+        + "\n\nMEASUREMENT EVIDENCE:\n"
+        + json.dumps(evidence, indent=2, ensure_ascii=False)
+    )
 
     return record
-
 
 def main():
     parser = argparse.ArgumentParser(description="Run the scenarios and log the results.")
@@ -79,7 +173,7 @@ def main():
 
     if not scenario_module.SCENARIOS:
         print("scenarios.py is empty. Milestone 3 starts by filling it in.", file=sys.stderr)
-        sys.exit(1)
+        sys.exit(1) 
 
     if args.tries < 5:
         print(f"⚠️  {args.tries} tries. Your criteria are written out of five.\n")
