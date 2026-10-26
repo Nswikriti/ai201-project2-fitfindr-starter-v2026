@@ -355,13 +355,19 @@ explicit while preserving the original acceptance criteria.
 
 | Criterion | Target | Try 1 | Try 2 | Try 3 | Try 4 | Try 5 | Verdict |
 |---|---|---|---|---|---|---|---|
-| 1.  |  |  |  |  |  |  |  |
-| 2.  |  |  |  |  |  |  |  |
-| 3.  |  |  |  |  |  |  |  |
-| 4.  |  |  |  |  |  |  |  |
-| 5.  |  |  |  |  |  |  |  |
+| 1. Matching query completes all tools | At least 4 of 5 | PASS | PASS | PASS | PASS | PASS | MET (5/5) |
+| 2. Empty search stops before outfit | 5 of 5 | PASS | PASS | PASS | PASS | PASS | MET (5/5) |
+| 3. Selected item stays consistent | 5 of 5 | PASS | PASS | PASS | PASS | PASS | MET (5/5) |
+| 4. Fit card has accurate details and length | At least 4 of 5 | PASS | PASS | PASS | PASS | PASS | MET (5/5) |
+| 5. Search respects the price ceiling | All 5 searches pass | PASS | PASS | PASS | PASS | PASS | MET |
 
-**Did it help, and how do I know:**
+Evidence: results/run_2026-10-25_2021_after.md, produced by
+run_eval.py::main and run_eval.py::run_once.
+
+Each scenario ran five times with caching disabled. Criterion 4 was
+scored using its designated fit-card scenario. For criterion 5, each
+column summarizes all five different budget searches. All 25 search
+executions returned nonempty results within their price ceilings.
 
 **Did it help, and how do I know:**
 
@@ -384,41 +390,3 @@ The successful-agent tests focus on one tee. Future testing should
 cover different items and missing brands. Keyword search also returns
 loosely related listings when only one word matches. I stopped after
 one measured prompt change to keep the comparison focused.
-
-
-
-     SUBMISSION CHECKLIST — unit 3
-
-       [ ] criteria.md has five numbered criteria, each with a target
-       [ ] Each criterion has a reason underneath it
-       [ ] All five unit 3 sections above have real content
-       [ ] Tool Inventory: all three tools, inputs WITH TYPES, a specific
-           return value, and the empty case
-       [ ] Planning Loop names the branch rule and agent.py::run_agent
-       [ ] Sample Run: one full query plus the three per-tool tests, as text
-       [ ] At least four new commits
-       [ ] Repository URL submitted — WRITE IT DOWN, you submit the same one
-           next unit
-
-     SUBMISSION CHECKLIST — unit 4
-
-       [ ] mcp_server.py exists with one tool registered
-           (or a written record of exactly where the rewire broke)
-       [ ] Run Log — Before, five criteria, five tries each
-       [ ] Real output pasted underneath, naming file and function
-       [ ] A verdict on every criterion
-       [ ] A diagnosis for every miss, naming a place AND a mechanism
-       [ ] Loop Trace, with the MCP call visible in it
-       [ ] All three failure modes triggered and handled
-       [ ] One improvement, with Run Log — After in the same format
-       [ ] What's Still Broken
-       [ ] At least four new commits
-       [ ] The SAME repository URL as last unit
-
-     Do not delete and recreate this repository. Your commit history is what
-     shows your criteria existed before your results did.
-     ═════════════════════════════════════════════════════════════════════ -->
-
----
-
-📖 **How to run this project: [RUNNING.md](RUNNING.md)**
