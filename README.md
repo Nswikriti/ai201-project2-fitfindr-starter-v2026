@@ -338,14 +338,18 @@ returned helpful advice and made zero model calls.
 
 ## The Improvement
 
-<!-- What you changed, why your diagnosis pointed at it, and the after-run in
-     the same table format. One change, measured properly.
-
-     `python run_eval.py --label after` -->
-
 **What I changed:**
 
+I strengthened the system prompt in tools.py::create_fit_card.
+It now requires the selected item's name, price, and platform in
+the same sentence and explicitly distinguishes other outfit pieces
+from the item being sold. No other agent behavior was changed.
+
 **Which failure it was meant to fix:**
+
+In criterion 4, baseline try 2, the caption attached the tee's $18
+price to a crossbody bag. The change aims to make price attribution
+explicit while preserving the original acceptance criteria.
 
 ### Run Log — After
 
